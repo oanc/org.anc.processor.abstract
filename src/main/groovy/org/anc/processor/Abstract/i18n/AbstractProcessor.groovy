@@ -4,6 +4,8 @@ import org.anc.conf.AnnotationConfig
 import org.anc.index.api.Index
 import org.anc.tool.api.IProcessor
 import org.anc.tool.api.ProcessorException
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.xces.graf.io.dom.ResourceHeader
 
 import javax.ws.rs.GET
@@ -15,13 +17,12 @@ import javax.ws.rs.core.Response
  */
 abstract class AbstractProcessor {
 
-    //private static final Logger logger = LoggerFactory.getLogger(NLTKProcessor)
+    private static final Logger logger = LoggerFactory.getLogger()
 
     private static final Messages MESSAGES = new Messages()
 
     Set<String> Acceptable
 
-    /** Processor object used to convert GrAF files into the nltk format. */
     IProcessor processor
     ResourceHeader header
     Index index
@@ -30,8 +31,9 @@ abstract class AbstractProcessor {
         Acceptable = accepted
     }
 
-    AbstractProcessor(Set<String> passing, ){
-        super (passing ..);
+    AbstractProcessor(Set<String> passingAnnotations){
+        setAcceptable(passingAnnotations);
+
     }
 
     def PennTreeBank = ["f.ptb", "f.ptbtok"] as HashSet<String>
@@ -49,30 +51,30 @@ abstract class AbstractProcessor {
      * @return A boolean response if the annotations passed in are acceptable for
      *  processing.
      */
-    boolean validAnnotations(ArrayList<String> annotations) {
+    boolean validAnnotations() {
         def returnval = true
-        if (annotations.size() == 0)
+        if (Acceptable.size() == 0)
             return false
         else {
-            //It's a PTB_FN_Annotations
-            if (PTB_Antns.contains(annotations[0])) {
-                for (String annotation : annotations) {
-                    if (!PTB_Antns.contains(annotation)) {
+            //It's a PTB_FN_Acceptable
+            if (PennTreeBank.contains(Acceptable[0])) {
+                for (String annotation : Acceptable) {
+                    if (!PennTreeBank.contains(annotation)) {
                         returnval = false
                     }
                 }
             }
-            /* non ptb
-            else if(nonPTB_FN_Antns.contains(annotations[0])){
-                for (String annotation : annotations){
-                    if (!nonPTB_FN_Antns.contains(annotation)){
+            //Part of Speech
+            else if(PartOfSpeech.contains(Acceptable[0])){
+                for (String annotation : Acceptable){
+                    if (!PartOfSpeech.contains(annotation)){
                         returnval = false
                     }
                 }
-            }*/
+            }
             //fn
-            else if (FN_Antns.contains(annotations[0])) {
-                for (String annotation : annotations) {
+            else if (FN_Antns.contains(Acceptable[0])) {
+                for (String annotation : Acceptable) {
                     if (!FN_Antns.contains(annotation)) {
                         returnval = false
                     }
