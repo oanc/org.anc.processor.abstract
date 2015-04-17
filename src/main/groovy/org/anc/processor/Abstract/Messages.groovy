@@ -1,4 +1,4 @@
-package org.anc.processor.Abstract.i18n
+package org.anc.processor.Abstract
 
 import org.anc.i18n.*
 import org.anc.i18n.BaseTranslation.Default

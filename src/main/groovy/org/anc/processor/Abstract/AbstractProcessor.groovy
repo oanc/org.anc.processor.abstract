@@ -1,7 +1,8 @@
-package org.anc.processor.Abstract.i18n
+package org.anc.processor.Abstract
 
 import org.anc.conf.AnnotationConfig
 import org.anc.index.api.Index
+import org.anc.index.core.IndexImpl
 import org.anc.tool.api.IProcessor
 import org.anc.tool.api.ProcessorException
 import org.slf4j.Logger
@@ -15,35 +16,37 @@ import javax.ws.rs.core.Response
 /**
  * Created by danmccormack on 12/12/14.
  */
-abstract class AbstractProcessor {
+class AbstractProcessor {
 
-    private static final Logger logger = LoggerFactory.getLogger()
+    private static final Logger logger = LoggerFactory.getLogger(AbstractProcessor)
 
     private static final Messages MESSAGES = new Messages()
 
-    Set<String> Acceptable
+    public List<String> Acceptable
 
-    IProcessor processor
-    ResourceHeader header
-    Index index
+    public IProcessor processor
+    public ResourceHeader header
+    public Index index
 
-    void setAcceptable(Set<String> accepted) {
+    void setAcceptable(List<String> accepted) {
         Acceptable = accepted
     }
 
-    AbstractProcessor(Set<String> passingAnnotations){
+    AbstractProcessor(List<String> passingAnnotations){
         setAcceptable(passingAnnotations);
-
+        //TODO This path should not be hard coded.
+        header = new ResourceHeader(new File("/var/corpora/MASC-3.0.0/resource-header.xml"))
+        index = new IndexImpl().loadMasc3Index()
     }
 
-    def PennTreeBank = ["f.ptb", "f.ptbtok"] as HashSet<String>
+    static def PennTreeBank = ["f.ptb", "f.ptbtok"] as List<String>
 
-    def PartOfSpeech = ["f.penn", "f.sentences", "f.biber", "f.c5", "f.c7", "f.cb",
+    static def PartOfSpeech = ["f.penn", "f.sentences", "f.biber", "f.c5", "f.c7", "f.cb",
                         "f.content", "f.event", "f.hepple", "f.logical",
                         "f.mpqa", "f.nc", "f.ne", "f.none",
-                        "f.slate_coref", "f.vc"] as HashSet<String>
+                        "f.slate_coref", "f.vc", "f.s"] as List<String>
 
-    def FN_Antns = ["f.fn", "f.fntok"] as HashSet<String>
+    static def FN_Antns = ["f.fn", "f.fntok"] as List<String>
 
     /**
      * Check if the annotations provided are acceptable for processing
@@ -51,34 +54,47 @@ abstract class AbstractProcessor {
      * @return A boolean response if the annotations passed in are acceptable for
      *  processing.
      */
-    boolean validAnnotations() {
+
+    public boolean validAnnotations(List<String> selected) {
         def returnval = true
-        if (Acceptable.size() == 0)
+        if (selected.size() == 0)
             return false
         else {
             //It's a PTB_FN_Acceptable
-            if (PennTreeBank.contains(Acceptable[0])) {
-                for (String annotation : Acceptable) {
+            if (PennTreeBank.contains(selected[0])) {
+                for (String annotation : selected) {
                     if (!PennTreeBank.contains(annotation)) {
+                        returnval = false
+                    }
+                    if (!Acceptable.contains(annotation)){
                         returnval = false
                     }
                 }
             }
             //Part of Speech
-            else if(PartOfSpeech.contains(Acceptable[0])){
-                for (String annotation : Acceptable){
+            else if(PartOfSpeech.contains(selected[0])){
+                for (String annotation : selected){
                     if (!PartOfSpeech.contains(annotation)){
+                        returnval = false
+                    }
+                    if (!Acceptable.contains(annotation)){
                         returnval = false
                     }
                 }
             }
             //fn
-            else if (FN_Antns.contains(Acceptable[0])) {
-                for (String annotation : Acceptable) {
+            else if (FN_Antns.contains(selected[0])) {
+                for (String annotation : selected) {
                     if (!FN_Antns.contains(annotation)) {
                         returnval = false
                     }
+                    if (!Acceptable.contains(annotation)){
+                        returnval = false
+                    }
                 }
+            }
+            else{
+                returnval = false;
             }
         }
 
@@ -92,7 +108,7 @@ abstract class AbstractProcessor {
      */
     List<String> parseAnnotations(String antnString) {
         if (antnString == "") {
-            return Acceptable.toList()
+            return Acceptable.toList() as List<String>
         } else {
             // The collect closure will prepend the string 'f.' to every element in the
             // list.
@@ -122,7 +138,8 @@ abstract class AbstractProcessor {
 
 
 
-        List<String> selectedAnnotations = parseAnnotations(annotations)
+        def selectedAnnotations = parseAnnotations(annotations)
+        System.out.println(selectedAnnotations)
         File inputFile = index.get(docID)
         if (inputFile == null) {
             logger.debug("No document with id {}", docID)
