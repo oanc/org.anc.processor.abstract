@@ -128,7 +128,7 @@ class AbstractProcessor {
     Response process(@QueryParam('annotations') String annotations,
                      @QueryParam('id') String docID) {
         if (annotations == null) {
-            return Response.serverError().entity(MESSAGES.NO_ANNOTATIONS)
+            return Response.status(400).entity(MESSAGES.NO_ANNOTATIONS).build()
         }
         if (docID == null) {
             return Response.serverError().entity(MESSAGES.NO_DOC_ID)
@@ -160,6 +160,9 @@ class AbstractProcessor {
             processor.reset()
             processor.resourceHeader = header
             processor.annotationTypes = new AnnotationConfig(selectedAnnotations)
+            // TODO This should be removed as it is only used to make the XMLProcessor
+            // stop complaining about a setting it doesn't actually use.
+            processor.setOptions("Discard")
             processor.initialize()
             processor.process(inputFile, outputFile);
             return Response.ok(outputFile.text).build();
